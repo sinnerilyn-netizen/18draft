@@ -3,7 +3,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<!-- Use a desktop-width layout viewport on phones/tablets so the page keeps the PC composition. -->
+<meta content="width=1100, viewport-fit=cover" name="viewport"/>
 <meta content="#03142d" name="theme-color"/>
 <meta content="Kristia's Special Night." name="description"/>
 <title>Kristia's 18th Debut</title>
@@ -1488,6 +1489,62 @@ footer,
     left: 0 !important;
     height: 100vh;
     height: 100lvh;
+  }
+}
+</style>
+
+
+<style id="static-fixed-ocean-optimization">
+/* Keep the underwater scene at a constant large-viewport size, even when
+   mobile browser chrome expands or collapses during scrolling. */
+#sea {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  height: 100vh !important;
+  height: 100lvh !important;
+  overflow: hidden !important;
+  contain: paint;
+  pointer-events: none;
+}
+
+/* The gradients, rays, mist, jellyfish and reef stay visible but do not
+   animate or trigger continuous background repainting while the page scrolls. */
+#sea,
+#sea::before,
+#sea::after,
+#sea *,
+#sea *::before,
+#sea *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Keep the ocean gradients, rays, mist, jellyfish and reef static, but allow
+   the lightweight bubbles to rise independently of page scrolling. */
+#sea .bubble {
+  top: auto !important;
+  bottom: -10% !important;
+  opacity: initial;
+  animation: rise-bubble var(--speed) linear infinite !important;
+  animation-delay: var(--delay) !important;
+  will-change: transform, opacity;
+}
+
+/* Make the base color seamless if a browser briefly repaints the fixed layer. */
+body { background-color: #03132d; }
+
+/* Respect accessibility settings: users who request reduced motion still get
+   a static background and stationary bubbles. */
+@media (prefers-reduced-motion: reduce) {
+  #sea .bubble {
+    animation: none !important;
+    will-change: auto;
+    opacity: .38 !important;
+    top: 70% !important;
+    bottom: auto !important;
   }
 }
 </style>
