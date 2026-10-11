@@ -1393,6 +1393,105 @@ footer,
   }
 }
 </style>
+
+<style id="scroll-render-stability">
+/* Scroll stability: preserve the composition, but avoid expensive per-scroll filters. */
+.depth-shade {
+  transition: none !important;
+}
+.reveal {
+  filter: none !important;
+  transition: opacity .78s ease, transform .78s cubic-bezier(.2,.7,.2,1) !important;
+}
+.reveal.visible {
+  filter: none !important;
+}
+
+/* A dedicated stable painting context helps the fixed ocean layer stay consistent. */
+#sea {
+  isolation: isolate;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* On touch-sized screens, keep the ocean light effects, but stop the large blurred
+   atmosphere layers from continuously repainting while the page is being scrolled. */
+@media (max-width: 760px) {
+  #sea::before,
+  .beam,
+  .fog-layer {
+    animation: none !important;
+  }
+
+  .glass-panel,
+  .countdown-panel {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .fog-layer {
+    filter: blur(22px) !important;
+    opacity: .48;
+  }
+  .fog-layer--low {
+    filter: blur(28px) !important;
+    opacity: .32;
+  }
+  .beam {
+    filter: blur(23px) !important;
+  }
+  .beam.two {
+    filter: blur(28px) !important;
+  }
+  .beam.three {
+    filter: blur(25px) !important;
+  }
+}
+
+/* Honour device motion preferences consistently for all decorative animation. */
+@media (prefers-reduced-motion: reduce) {
+  #sea::before,
+  .beam,
+  .fog-layer,
+  .bubble,
+  .jf,
+  .portrait,
+  #open::before,
+  #open::after {
+    animation: none !important;
+  }
+  .reveal {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+</style>
+
+
+<style id="stable-background-on-scroll">
+/* Avoid a forced GPU/backface layer that can flash or re-raster on mobile scroll. */
+#sea {
+  -webkit-backface-visibility: visible !important;
+  backface-visibility: visible !important;
+}
+/* The ocean's vignette remains built into #sea::after; don't drive another shade by scroll. */
+.depth-shade {
+  opacity: 0 !important;
+  transition: none !important;
+}
+/* Keep the backdrop at one stable size while mobile browser chrome expands/collapses. */
+@media (max-width: 760px) {
+  #sea {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    height: 100vh;
+    height: 100lvh;
+  }
+}
+</style>
+
 </head>
 <body>
 <svg aria-hidden="true" class="jelly-defs" focusable="false" height="0" width="0">
@@ -1596,24 +1695,8 @@ We can’t wait to celebrate with you! ♡
   entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}});
  },{threshold:.12,rootMargin:'0px 0px -5% 0px'});
  revealElements.forEach(element=>observer.observe(element));
- // Deepen the scene and fade passed content while scrolling.
- const sea=document.getElementById('sea'); let raf=0;
- const fadeOnScroll=()=>{
-  raf=0;
-  const maxScroll=Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
-  const depth=Math.min(1,Math.max(0,window.scrollY/(maxScroll*.78)));
-  sea.style.setProperty('--depth',(depth*depth*(3-2*depth)).toFixed(3));
-  document.querySelectorAll('.reveal.visible').forEach(element=>{
-   const fadeAnchor=element.classList.contains('side-portrait')&&element.parentElement?element.parentElement:element;
-   const bottom=fadeAnchor.getBoundingClientRect().bottom,fadeRange=window.innerHeight*.54;
-   const amount=Math.min(1,Math.max(0,bottom/fadeRange));
-   const eased=amount*amount*(3-2*amount);
-   element.style.opacity=String(eased);
-   element.style.filter=eased<.999?`brightness(${.34+.66*eased}) blur(${(1-eased)*7}px)`:'none';
-  });
- };
- const requestFade=()=>{if(!raf)raf=window.requestAnimationFrame(fadeOnScroll);};
- window.addEventListener('scroll',requestFade,{passive:true}); window.addEventListener('resize',requestFade);
+ // Keep the ocean backdrop static while scrolling so mobile browsers do not
+ // repeatedly recalculate its shading as the address bar/viewport changes.
  // Button-triggered water wipe.
  const openButton=document.getElementById('open');
  openButton.addEventListener('click',()=>{
@@ -1621,7 +1704,7 @@ We can’t wait to celebrate with you! ♡
   const rect=openButton.getBoundingClientRect();
   body.style.setProperty('--x',`${rect.left+rect.width/2}px`); body.style.setProperty('--y',`${rect.top+rect.height/2}px`);
   document.getElementById('cover').inert=true; body.classList.add('diving');
-  window.setTimeout(()=>{body.classList.add('open');window.scrollTo(0,0);requestFade();},reduceMotion?20:950);
+  window.setTimeout(()=>{body.classList.add('open');window.scrollTo(0,0);},reduceMotion?20:950);
   window.setTimeout(()=>{const cover=document.getElementById('cover');if(cover)cover.remove();},reduceMotion?100:2400);
  });
 })();
